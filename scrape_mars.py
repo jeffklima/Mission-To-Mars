@@ -13,16 +13,33 @@ def init_browser():
     #return Browser('chrome', **executable_path, headless=False)
 
     #Windows Users
-    exec_path = {'executable_path': 'chromedriver'}
-    return Browser('chrome', headless=True, **exec_path)
+    executable_path = {'executable_path': 'chromedriver'}
+    return Browser('chrome', **executable_path, headless=False)
 
-# Create Mission to Mars global dictionary that can be imported into Mongo
-mars_data = {}
+# Create Mission to Mars dictionary
+def scrape_info():
+
+    # Initialize browser 
+    browser = init_browser()
+    news_title, news_p = scrape_mars_news()
+
+    mars_data = {
+        'news_title': news_title,
+        'news_paragraph': news_p,
+        'featured_img_url': scrape_mars_image(),
+        'mars_weather_tweet': scrape_mars_weather(),
+        'facts': scrape_mars_facts(),
+        'hemisphere_image_urls': scrape_mars_hemispheres()
+        }
+
+    browser.quit()
+
+    return mars_data   
 
 # Mars news
 def scrape_mars_news():
 
-# Initialize browser 
+    # Initialize browser 
     browser = init_browser()
 
     news_url = 'https://mars.nasa.gov/news/'
@@ -37,13 +54,10 @@ def scrape_mars_news():
     # Retrieve the latest element that contains news title and news paragraph
     news_title = soup.find('div', class_='content_title').text
     news_p = soup.find('div', class_='article_teaser_body').text
-
-    mars_data['news_title'] = news_title
-    mars_data['news_paragraph'] = news_p
         
     browser.quit()
         
-    return mars_data
+    return news_title, news_p
     
 
 # FEATURED IMAGE
@@ -65,15 +79,10 @@ def scrape_mars_image():
     site_url = "https://www.jpl.nasa.gov"
     featured_image = soup.find("div", class_="carousel_items").find("article")["style"]
     featured_img_url = featured_image.split("'")[1]
-    featured_img_url = site_url + featured_img_url
-    featured_img_url 
-
-    # Featured image dictionary
-    mars_data['featured_image_url'] = featured_img_url  
-            
+    featured_image_url = site_url + featured_img_url
     browser.quit()   
 
-    return mars_data
+    return featured_image_url
 
 # Mars Weather 
 def scrape_mars_weather():
@@ -93,13 +102,10 @@ def scrape_mars_weather():
 
     #Latest Tweet
     mars_weather_tweet = soup.find('div', class_='js-tweet-text-container').text
-
-    # Mars weather dictionary
-    mars_data['mars_weather_tweet'] = mars_weather_tweet
         
     browser.quit()
 
-    return mars_data 
+    return mars_weather_tweet
 
 # Mars Facts
 def scrape_mars_facts():
@@ -120,13 +126,9 @@ def scrape_mars_facts():
 
     facts = facts_df.to_html()
 
-    # Mars facts dictionary
-    mars_data['mars_facts'] = facts
-
     browser.quit()
 
-    return mars_data
-
+    return facts
 
 # MARS Hemispheres
 def scrape_mars_hemispheres():
@@ -142,30 +144,29 @@ def scrape_mars_hemispheres():
 
     soup = BeautifulSoup(hemispheres_html, 'html.parser')
 
-    items = soup.find_all('div', class_='item')
+    hemis = soup.find_all('div', class_='item')
 
     hemisphere_image_urls = []
 
-    hemispheres_url = 'https://astrogeology.usgs.gov'
+    hemispheres_main = 'https://astrogeology.usgs.gov'
 
     # Loop through to get each image title and url
-    for i in items: 
+    for i in hemis: 
         title = i.find('h3').text
 
         end_of_url = i.find('a', class_='itemLink product-item')['href']
         
-        browser.visit(hemispheres_url + end_of_url)
+        browser.visit(hemispheres_main + end_of_url)
         
         img_name = browser.html
         
         soup = BeautifulSoup(img_name, 'html.parser')
         
-        img_url = hemispheres_url + soup.find('img', class_='wide-image')['src']
+        img_url = hemispheres_main + soup.find('img', class_='wide-image')['src']
         
         hemisphere_image_urls.append({"title" : title, "img_url" : img_url})
 
-    mars_data['hemisphere_image_urls'] = hemisphere_image_urls
 
     browser.quit()
 
-    return mars_data
+    return hemisphere_image_urls

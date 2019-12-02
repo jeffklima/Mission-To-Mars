@@ -166,7 +166,7 @@ def scrape_mars_hemispheres():
         
         hemisphere_image_urls.append({"title" : title, "img_url" : img_url})
 
-
+        
     browser.quit()
 
     return hemisphere_image_urls
